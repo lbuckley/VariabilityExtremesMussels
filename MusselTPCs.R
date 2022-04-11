@@ -23,6 +23,15 @@ ggplot(data=cr, aes(x=temp_C, y =clearance_ml_min, color=season))+
 perf= beta_2012(1:40, tpc.beta[1], tpc.beta[2], tpc.beta[3], tpc.beta[4], tpc.beta[5])
 plot(1:40, perf, type="l")
 
+#--------
+#Look for data from M. californicus, if not: trosollus or gallo?
+
+#Use TPC data from Monaco et al. 2016? But only SMR data
+#https://esajournals.onlinelibrary.wiley.com/doi/full/10.1002/ecm.1230
+
+#rough data here: https://doi.org/10.1093/icb/icx031
+
+
 #--------------------
 #load variable TPCs
 #https://doi.org/10.1111/1365-2435.13889
