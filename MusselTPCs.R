@@ -79,7 +79,8 @@ lt.fig<- ggplot(data=lt.mean, aes(x=Mean.temperature...C., y =mean, color=Fluctu
 #combine
 setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/figures/")
 pdf("Fig1_musselTPCs.pdf",height = 6, width = 11)
-mussel.seas.fig+ lt.fig + plot_layout(ncol = 2, widths=c(2,1.5))
+mussel.seas.fig+ lt.fig + plot_layout(ncol = 2, widths=c(2,1.5))+ 
+  plot_annotation(tag_levels = 'A')
 dev.off()
 
 #------------------

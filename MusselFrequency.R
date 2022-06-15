@@ -106,13 +106,13 @@ te.sub$Height= ordered(te.sub$Height, levels=c("lower-mid","mid","high", "Tair")
 
 #FIG 1A, time series
 fig2a.bb<- ggplot(data=te.sub, aes(x=doy, y = MaxTemp_C))+
-  geom_line(aes(color=Height), alpha=0.8) +theme_classic()+
-  labs(x = "Day of year",y="Maximum daily temperature (°C)")+
+  geom_line(aes(color=Height), alpha=0.8) +
+  labs(x = "day of year",y="maximum daily temperature (°C)")+
   scale_color_manual(values=vir.cols)+
   guides(color=FALSE)
 
 #add weather station
-fig.timeseries= fig2a.bb+ geom_line(data=dat1[which(dat1$year==2007 & dat1$j %in% 120:274),], aes(x=j, y =tmax, col=vir.cols[4]), alpha=0.8) +theme_classic()
+fig.timeseries= fig2a.bb+ geom_line(data=dat1[which(dat1$year==2007 & dat1$j %in% 120:274),], aes(x=j, y =tmax, col=vir.cols[4]), alpha=0.8) +theme_classic(base_size = 14)
 
 #------------------
 #FREQUENCY ANALYSIS
@@ -200,46 +200,39 @@ table(pow$subsite)
 #subsites
 pow1= pow[pow$subsite %in% subs,]
 
-fig2b<- ggplot(data=pow1, aes(x=log(freq), y = log(cyc_range/2) ))+geom_line(alpha=0.8, aes(color=Height)) +theme_classic()+ 
+fig2b<- ggplot(data=pow1, aes(x=log(freq), y = log(cyc_range/2) ))+geom_line(alpha=0.8, aes(color=Height)) +theme_classic(base_size = 14)+ 
   #guides(color=FALSE, size=FALSE)+
   geom_vline(xintercept=-2.639, color="gray")+geom_vline(xintercept=-1.946, color="gray")+geom_vline(xintercept=-3.40, color="gray")+geom_vline(xintercept=-5.9, color="gray")+
   labs(x = "log (frequency) (1/days)",y="log (amplitude)")+
-  scale_color_manual(values=vir.cols)+
-  annotate(geom="text", x=-2.1, y=-5.5, label="1 week", size=3, color="black",angle=90)+ 
-  annotate(geom="text", x=-2.8, y=-5.5, label="2 weeks", size=3, color="black",angle=90)+ 
-  annotate(geom="text", x=-3.6, y=-5.5, label="1 month", size=3, color="black",angle=90)+ 
-  annotate(geom="text", x=-6.2, y=-5.5, label="1 year", size=3, color="black",angle=90)+
+  scale_color_manual("height", values=vir.cols)+
+  annotate(geom="text", x=-2.1, y=-5, label="1 week", size=3, color="black",angle=90)+ 
+  annotate(geom="text", x=-2.8, y=-5, label="2 weeks", size=3, color="black",angle=90)+ 
+  annotate(geom="text", x=-3.6, y=-5, label="1 month", size=3, color="black",angle=90)+ 
+  annotate(geom="text", x=-6.2, y=-5, label="1 year", size=3, color="black",angle=90)+
   ylim(range(-5.8,2.05))+
   theme(legend.position="bottom")
-
-#=================================
-#combine
-library(patchwork)
-
-#Figures
-#TPC through seasons? TPCs with variability?
-
-#boiler bay
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/figures/")
-pdf("Fig2_musselTemps.pdf",height = 10, width = 10)
-fig.timeseries+ fig2b + plot_layout(ncol = 1)
-dev.off()
 
 #count by site, subsite, year
 te.count = te.max %>% group_by(year,site, subsite, zone, tidal.height..m.) %>% summarise( count=length(MaxTemp_C)  )
 te.count= as.data.frame(te.count)
 #find sub sites to use
 
-#=================================
+#---------------
 #estimate performance
 #show effects of different time averaging
 #From MusselTPCs_fits
 #M. trossulus summer
 
-tperf= function(x) beta_2012(x, tpc.beta[1], tpc.beta[2], tpc.beta[3], tpc.beta[4], tpc.beta[5])
+tperf= function(x) {
+  perf= beta_2012(x, tpc.beta[1], tpc.beta[2], tpc.beta[3], tpc.beta[4], tpc.beta[5])
+  #set performance to zero outside TPC
+  perf[which(!is.finite(perf))]=0
+  return(perf)
+}
 
 #temporal averaging
 te.sub= te.max2[which(te.max2$site=="BB" & te.max2$subsite %in% c(5,2,13) & te.max2$year==2007),]
+
 #add Tair data
 dat1.sub= dat1[which(dat1$year==2007),]
 te.tair= matrix(NA, nrow=nrow(dat1.sub),ncol=ncol(te.sub))
@@ -258,37 +251,43 @@ doys= 1:365
 ts5= as.data.frame(cbind(doys, site=rep(5, length(doys)), temps=rep(NA, length(doys)) ))
 match1= match(doys, te.sub[which(te.sub$subsite==5),]$doy)
 inds= which(!is.na(match1))
-ts5$temps[inds]= te.sub$MaxTemp_C[match1[inds]]
+ts5$temps[inds]= te.sub[which(te.sub$subsite==5),]$MaxTemp_C[match1[inds]]
 ts5$t.wk= rollmean(ts5$temps, k=7, fill=NA)
 ts5$t.2wk= rollmean(ts5$temps, k=14, fill=NA)
+ts5$t.mo= rollmean(ts5$temps, k=30, fill=NA)
+ts5$t.3mo= rollmean(ts5$temps, k=90, fill=NA)
 
 ts2= as.data.frame(cbind(doys, site=rep(2, length(doys)), temps=rep(NA, length(doys)) ))
 match1= match(doys, te.sub[which(te.sub$subsite==2),]$doy)
 inds= which(!is.na(match1))
-ts2$temps[inds]= te.sub$MaxTemp_C[match1[inds]]
+ts2$temps[inds]= te.sub[which(te.sub$subsite==2),]$MaxTemp_C[match1[inds]]
 ts2$t.wk= rollmean(ts2$temps, k=7, fill=NA)
 ts2$t.2wk= rollmean(ts2$temps, k=14, fill=NA)
+ts2$t.mo= rollmean(ts2$temps, k=30, fill=NA)
+ts2$t.3mo= rollmean(ts2$temps, k=90, fill=NA)
 
 ts13= as.data.frame(cbind(doys, site=rep(13, length(doys)), temps=rep(NA, length(doys)) ))
 match1= match(doys, te.sub[which(te.sub$subsite==13),]$doy)
 inds= which(!is.na(match1))
-ts13$temps[inds]= te.sub$MaxTemp_C[match1[inds]]
+ts13$temps[inds]= te.sub[which(te.sub$subsite==13),]$MaxTemp_C[match1[inds]]
 ts13$t.wk= rollmean(ts13$temps, k=7, fill=NA)
 ts13$t.2wk= rollmean(ts13$temps, k=14, fill=NA)
+ts13$t.mo= rollmean(ts13$temps, k=30, fill=NA)
+ts13$t.3mo= rollmean(ts13$temps, k=90, fill=NA)
 
 #combine
 ts= rbind(ts5, ts2, ts13)
 
-#add month
-te.mo= aggregate(te.sub[,c("MaxTemp_C","doy")], by=list(te.sub$subsite, te.sub$year, te.sub$month), FUN=mean, na.rm=TRUE)
-names(te.mo)[1:3]=c("subsite","year","month")
-
-ts$ds=paste(ts$doys, ts$site, sep="_")
-ds=paste(round(te.mo$doy), te.mo$subsite, sep="_")
-ts$t.mo=NA
-match1= match(ts$ds, ds)
-inds= which(!is.na(match1))
-ts$t.mo[inds]= te.mo$MaxTemp_C[match1[inds]]
+# #add month
+# te.mo= aggregate(te.sub[,c("MaxTemp_C","doy")], by=list(te.sub$subsite, te.sub$year, te.sub$month), FUN=mean, na.rm=TRUE)
+# names(te.mo)[1:3]=c("subsite","year","month")
+# 
+# ts$ds=paste(ts$doys, ts$site, sep="_")
+# ds=paste(round(te.mo$doy), te.mo$subsite, sep="_")
+# ts$t.mo=NA
+# match1= match(ts$ds, ds)
+# inds= which(!is.na(match1))
+# ts$t.mo[inds]= te.mo$MaxTemp_C[match1[inds]]
 
 #estimate for robomussels at different heights and Tair
 #restrict to time underwater?
@@ -298,28 +297,48 @@ ts$p.d= tperf(ts$temps)
 ts$p.wk= tperf(ts$t.wk)
 ts$p.2wk= tperf(ts$t.2wk)
 ts$p.mo= tperf(ts$t.mo)
+ts$p.3mo= tperf(ts$t.3mo)
+
+summary(ts)
 
 #melt
 ts.l= melt(ts, id.vars=c("doys","site"))
 #label temp vs perf
 ts.l$type="temperature"
-ts.l$type[which(ts.l$variable %in% c("p.d","p.wk","p.2wk"))]="performance"
+ts.l$type[which(ts.l$variable %in% c("p.d","p.wk","p.2wk","p.mo","p.3mo"))]="performance"
 #label timescale
 ts.l$timescale= "day"
 ts.l$timescale[which(ts.l$variable %in% c("p.wk","t.wk"))]= "week"
 ts.l$timescale[which(ts.l$variable %in% c("p.2wk","t.2wk"))]= "2 week"
+ts.l$timescale[which(ts.l$variable %in% c("p.mo","t.mo"))]= "month"
+ts.l$timescale[which(ts.l$variable %in% c("p.3mo","t.3mo"))]= "3 month"
+ts.l$timescale= ordered(ts.l$timescale, levels=c("day","week","2 week","month","3 month"))
 
 #time series plot
-ggplot(data=ts.l, aes(x=doys, y =value, color=timescale))+
-  facet_grid(type~., scales="free_y")+
-  geom_line(alpha=0.5) +theme_classic(base_size = 20)
+fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance" & ts.l$site==5,], aes(x=doys, y =value, color=timescale))+
+  #facet_grid(site~., scales="free_y")+
+  geom_line() +theme_classic(base_size = 14)+
+  scale_color_viridis_d()+theme(legend.position="bottom")+
+  ylab("clearance rate at lower-mid site (ml/min)")+xlab("day of year")+
+  xlim(120,274)
 
 #density plot
-ggplot(data=ts.l, aes(x =value, color=timescale))+
-  facet_grid(type~., scales="free")+
+ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x =value, color=timescale))+
+  facet_grid(type~site, scales="free")+
   geom_density()
 
+#=================================
+#combine #boiler bay figures
+library(patchwork)
 
+#Figures
+#TPC through seasons? TPCs with variability?
+
+setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/figures/")
+pdf("Fig2_musselTempPerf.pdf",height = 10, width = 10)
+fig.timeseries +fig2b +fig.perf +plot_layout(ncol = 1)+ 
+  plot_annotation(tag_levels = 'A')
+dev.off()
 
 
 
