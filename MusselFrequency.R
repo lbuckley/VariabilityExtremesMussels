@@ -6,6 +6,7 @@ library(tidyr)
 library(zoo)
 
 library(ggplot2)
+library(rTPC)
 
 setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/analysis/")
 source("TempcyclesAnalysis.R")
@@ -82,6 +83,63 @@ dat1$doy= dat1$j
 
 #divide temp by 10 to account for format
 dat1$tmax = dat1$tmax/10
+
+#------------------------
+#Load boiler bay data
+
+#site info
+setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/data/robomussels/")
+site.dat= read.csv("README.csv")
+
+my.read.table= function(x) {
+  dat= read.table(x, row.names=NULL)
+  dat$id= gsub(".txt","",x) 
+  return(dat)}
+
+setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/data/robomussels/robomussel/robomussel/US (United States)/OR (Oregon)/BB (Boiler Bay)/")
+
+file_names <- dir() #where you have your files
+te.bb <- do.call(rbind,lapply(file_names,my.read.table))
+#just 2007
+te.2007<- te.bb[grep("2007",te.bb$row.names),]
+
+#process
+#extract sites and numbers
+te.wa$id1= gsub("BMRMUS","",te.wa$id)
+te.wa$site= as.factor( substr(te.wa$id1, 3, 4) )
+
+#extract subsite
+te.wa$subsite=  substr(te.wa$id1, 5, 6)
+te.wa$subsite= gsub("_","",te.wa$subsite)
+te.wa$subsite= as.factor(te.wa$subsite)
+
+te.wa$date= te.wa$row.names
+
+day=  as.POSIXlt(te.wa$date, format="%m/%d/%Y")
+te.wa$doy=as.numeric(strftime(day, format = "%j"))
+te.wa$year=as.numeric(strftime(day, format = "%Y"))
+te.wa$month=as.numeric(strftime(day, format = "%m"))
+te.wa$j=julian(day)
+
+#add info
+site.match= vapply(strsplit(te.wa$id,"_"), `[`, 1, FUN.VALUE=character(1))
+
+match1= match(site.match, site.dat$microsite.id) #site.dat$site
+te.wa$lat= site.dat$latitude[match1]
+te.wa$zone= site.dat$zone[match1]
+te.wa$tidal.height..m.= site.dat$tidal.height..m.[match1]
+te.wa$substrate= site.dat$substrate[match1]
+
+#restrict to summer
+#May 1 through September: 121:273 
+te.wa= subset(te.wa, te.wa$doy>120 & te.wa$doy<274)
+
+#subset
+te.sub.hr= te.wa[which(te.wa$subsite %in% c(5,2,13) ),]
+#Add heights
+subs= c(5,2, 13, "Te")
+height= c("lower-mid","mid","high", "Tair")
+te.sub.hr$Height= height[match(te.sub.hr$subsite, subs)]
 
 #----------------------
 #TIME SERIES PLOTS
@@ -231,83 +289,43 @@ tperf= function(x) {
 }
 
 #temporal averaging
-te.sub= te.max2[which(te.max2$site=="BB" & te.max2$subsite %in% c(5,2,13) & te.max2$year==2007),]
+te.tally= te.sub.hr %>% group_by(doy) %>% tally()
 
-#add Tair data
-dat1.sub= dat1[which(dat1$year==2007),]
-te.tair= matrix(NA, nrow=nrow(dat1.sub),ncol=ncol(te.sub))
-te.tair= as.data.frame(te.tair)
-colnames(te.tair)= colnames(te.sub)
-te.tair$doy= dat1.sub$doy
-te.tair$month= dat1.sub$month
-te.tair$MaxTemp_C= dat1.sub$tmax
-te.tair$site= "Tair"
-#combine
-te.sub= rbind(te.sub, te.tair)
+times= unique(te.sub.hr$Time_GMT)
+summer= 121:273
 
-#rolling averages
-doys= 1:365
+ts5= expand.grid(time=times, doy=summer)
+ts5$dt= paste(ts5$doy, ts5$time, sep=" ")
 
-ts5= as.data.frame(cbind(doys, site=rep(5, length(doys)), temps=rep(NA, length(doys)) ))
-match1= match(doys, te.sub[which(te.sub$subsite==5),]$doy)
-inds= which(!is.na(match1))
-ts5$temps[inds]= te.sub[which(te.sub$subsite==5),]$MaxTemp_C[match1[inds]]
-ts5$t.wk= rollmean(ts5$temps, k=7, fill=NA)
-ts5$t.2wk= rollmean(ts5$temps, k=14, fill=NA)
-ts5$t.mo= rollmean(ts5$temps, k=30, fill=NA)
-ts5$t.3mo= rollmean(ts5$temps, k=90, fill=NA)
+te.sub.hr$dt= paste(te.sub.hr$doy, te.sub.hr$Time_GMT, sep=" ")
+match1= match(ts5$dt,te.sub.hr$dt)
+ts5$Temp_C= te.sub.hr$Temp_C[match1]
 
-ts2= as.data.frame(cbind(doys, site=rep(2, length(doys)), temps=rep(NA, length(doys)) ))
-match1= match(doys, te.sub[which(te.sub$subsite==2),]$doy)
-inds= which(!is.na(match1))
-ts2$temps[inds]= te.sub[which(te.sub$subsite==2),]$MaxTemp_C[match1[inds]]
-ts2$t.wk= rollmean(ts2$temps, k=7, fill=NA)
-ts2$t.2wk= rollmean(ts2$temps, k=14, fill=NA)
-ts2$t.mo= rollmean(ts2$temps, k=30, fill=NA)
-ts2$t.3mo= rollmean(ts2$temps, k=90, fill=NA)
-
-ts13= as.data.frame(cbind(doys, site=rep(13, length(doys)), temps=rep(NA, length(doys)) ))
-match1= match(doys, te.sub[which(te.sub$subsite==13),]$doy)
-inds= which(!is.na(match1))
-ts13$temps[inds]= te.sub[which(te.sub$subsite==13),]$MaxTemp_C[match1[inds]]
-ts13$t.wk= rollmean(ts13$temps, k=7, fill=NA)
-ts13$t.2wk= rollmean(ts13$temps, k=14, fill=NA)
-ts13$t.mo= rollmean(ts13$temps, k=30, fill=NA)
-ts13$t.3mo= rollmean(ts13$temps, k=90, fill=NA)
-
-#combine
-ts= rbind(ts5, ts2, ts13)
-
-# #add month
-# te.mo= aggregate(te.sub[,c("MaxTemp_C","doy")], by=list(te.sub$subsite, te.sub$year, te.sub$month), FUN=mean, na.rm=TRUE)
-# names(te.mo)[1:3]=c("subsite","year","month")
-# 
-# ts$ds=paste(ts$doys, ts$site, sep="_")
-# ds=paste(round(te.mo$doy), te.mo$subsite, sep="_")
-# ts$t.mo=NA
-# match1= match(ts$ds, ds)
-# inds= which(!is.na(match1))
-# ts$t.mo[inds]= te.mo$MaxTemp_C[match1[inds]]
-
-#estimate for robomussels at different heights and Tair
-#restrict to time underwater?
+#rolling averages, data at 10 minutes
+ts5$t.day= rollmean(ts5$Temp_C, k=6, fill=NA)
+ts5$t.wk= rollmean(ts5$Temp_C, k=7*6, fill=NA)
+ts5$t.2wk= rollmean(ts5$Temp_C, k=14*6, fill=NA)
+ts5$t.mo= rollmean(ts5$Temp_C, k=30*6, fill=NA)
+ts5$t.3mo= rollmean(ts5$Temp_C, k=90*6, fill=NA)
 
 #estimate performance
-ts$p.d= tperf(ts$temps)
-ts$p.wk= tperf(ts$t.wk)
-ts$p.2wk= tperf(ts$t.2wk)
-ts$p.mo= tperf(ts$t.mo)
-ts$p.3mo= tperf(ts$t.3mo)
+ts5$p.d= tperf(ts5$Temp_C)
+ts5$p.day= tperf(ts5$t.day)
+ts5$p.wk= tperf(ts5$t.wk)
+ts5$p.2wk= tperf(ts5$t.2wk)
+ts5$p.mo= tperf(ts5$t.mo)
+ts5$p.3mo= tperf(ts5$t.3mo)
 
-summary(ts)
+summary(ts5)
 
 #melt
-ts.l= melt(ts, id.vars=c("doys","site"))
+ts.l= melt(ts5, id.vars=c("doy","time","dt"))
 #label temp vs perf
 ts.l$type="temperature"
-ts.l$type[which(ts.l$variable %in% c("p.d","p.wk","p.2wk","p.mo","p.3mo"))]="performance"
+ts.l$type[which(ts.l$variable %in% c("p.d","p.day","p.wk","p.2wk","p.mo","p.3mo"))]="performance"
 #label timescale
-ts.l$timescale= "day"
+ts.l$timescale= "subhourly"
+ts.l$timescale[which(ts.l$variable %in% c("p.day","t.day"))]= "day"
 ts.l$timescale[which(ts.l$variable %in% c("p.wk","t.wk"))]= "week"
 ts.l$timescale[which(ts.l$variable %in% c("p.2wk","t.2wk"))]= "2 week"
 ts.l$timescale[which(ts.l$variable %in% c("p.mo","t.mo"))]= "month"
@@ -315,10 +333,10 @@ ts.l$timescale[which(ts.l$variable %in% c("p.3mo","t.3mo"))]= "3 month"
 ts.l$timescale= ordered(ts.l$timescale, levels=c("day","week","2 week","month","3 month"))
 
 #time series plot
-fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance" & ts.l$site==5,], aes(x=doys, y =value, color=timescale))+
+fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x=doy, y =value, color=timescale))+
   #facet_grid(site~., scales="free_y")+
   geom_line() +theme_classic(base_size = 14)+
-  scale_color_viridis_d()+theme(legend.position="bottom")+
+  scale_color_viridis_d(alpha=0.6)+theme(legend.position="bottom")+
   ylab("clearance rate at lower-mid site (ml/min)")+xlab("day of year")+
   xlim(120,274)
 

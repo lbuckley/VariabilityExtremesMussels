@@ -17,6 +17,12 @@ ggplot(data=cr, aes(x=temp_C, y =clearance_ml_min, color=season))+
   facet_wrap(~species)+
   geom_point()+ geom_line(alpha=0.8) +theme_classic()
 
+#Bayne et al 1976 data
+#https://www.jstor.org/stable/4215210
+temps= c(13, 17.5, 22, 26)
+assim.fed= c(134.17, 176.06, 192.39, 113.58) #cals /day)
+assim.starv=c(7.58, 9.92, 10.87, 6.42)
+
 #-----
 #fit tpc
 #rTPC, https://github.com/padpadpadpad/rTPC
