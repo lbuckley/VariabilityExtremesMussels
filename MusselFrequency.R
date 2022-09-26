@@ -284,7 +284,7 @@ te.count= as.data.frame(te.count)
 tperf= function(x) {
   perf= beta_2012(x, tpc.beta[1], tpc.beta[2], tpc.beta[3], tpc.beta[4], tpc.beta[5])
   #set performance to zero outside TPC
-  perf[which(!is.finite(perf))]=0
+  #perf[which(!is.finite(perf))]=0
   return(perf)
 }
 
@@ -301,12 +301,16 @@ te.sub.hr$dt= paste(te.sub.hr$doy, te.sub.hr$Time_GMT, sep=" ")
 match1= match(ts5$dt,te.sub.hr$dt)
 ts5$Temp_C= te.sub.hr$Temp_C[match1]
 
+#set up date time
+time= matrix(as.numeric(unlist(str_split(ts5$time, ":"))), byrow=T, ncol=2)
+ts5$doy.t= ts5$doy + time[,1]/24 +time[,2]/(60*24)
+
 #rolling averages, data at 10 minutes
-ts5$t.day= rollmean(ts5$Temp_C, k=6, fill=NA)
-ts5$t.wk= rollmean(ts5$Temp_C, k=7*6, fill=NA)
-ts5$t.2wk= rollmean(ts5$Temp_C, k=14*6, fill=NA)
-ts5$t.mo= rollmean(ts5$Temp_C, k=30*6, fill=NA)
-ts5$t.3mo= rollmean(ts5$Temp_C, k=90*6, fill=NA)
+ts5$t.day= rollmean(ts5$Temp_C, k=6*24, fill=c(NA, "extend",NA))
+ts5$t.wk= rollmean(ts5$Temp_C, k=7*6*24, fill=c(NA, "extend",NA))
+ts5$t.2wk= rollmean(ts5$Temp_C, k=14*6*24, fill=c(NA, "extend",NA))
+ts5$t.mo= rollmean(ts5$Temp_C, k=30*6*24, fill=c(NA, "extend",NA))
+ts5$t.3mo= rollmean(ts5$Temp_C, k=90*6*24, fill=c(NA, "extend",NA))
 
 #estimate performance
 ts5$p.d= tperf(ts5$Temp_C)
@@ -316,10 +320,11 @@ ts5$p.2wk= tperf(ts5$t.2wk)
 ts5$p.mo= tperf(ts5$t.mo)
 ts5$p.3mo= tperf(ts5$t.3mo)
 
-summary(ts5)
+#set negative performance and NA to zero
+ts5$p.d[ts5$p.d<0]<-0
 
 #melt
-ts.l= melt(ts5, id.vars=c("doy","time","dt"))
+ts.l= melt(ts5, id.vars=c("doy","time","dt","doy.t"))
 #label temp vs perf
 ts.l$type="temperature"
 ts.l$type[which(ts.l$variable %in% c("p.d","p.day","p.wk","p.2wk","p.mo","p.3mo"))]="performance"
@@ -330,19 +335,19 @@ ts.l$timescale[which(ts.l$variable %in% c("p.wk","t.wk"))]= "week"
 ts.l$timescale[which(ts.l$variable %in% c("p.2wk","t.2wk"))]= "2 week"
 ts.l$timescale[which(ts.l$variable %in% c("p.mo","t.mo"))]= "month"
 ts.l$timescale[which(ts.l$variable %in% c("p.3mo","t.3mo"))]= "3 month"
-ts.l$timescale= ordered(ts.l$timescale, levels=c("day","week","2 week","month","3 month"))
+ts.l$timescale= ordered(ts.l$timescale, levels=c("subhourly","day","week","2 week","month","3 month"))
 
 #time series plot
-fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x=doy, y =value, color=timescale))+
+fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance"&  ts.l$timescale %in% c("day","week","2 week","month","3 month"),], aes(x=doy.t, y =value, color=timescale))+
   #facet_grid(site~., scales="free_y")+
   geom_line() +theme_classic(base_size = 14)+
   scale_color_viridis_d(alpha=0.6)+theme(legend.position="bottom")+
-  ylab("clearance rate at lower-mid site (ml/min)")+xlab("day of year")+
+  ylab("assimilation rate (cal/day)")+xlab("day of year")+
   xlim(120,274)+ylim(0,200)
 
 #density plot
 ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x =value, color=timescale))+
-  facet_grid(type~site, scales="free")+
+  facet_grid(type~., scales="free")+
   geom_density()
 
 #=================================
