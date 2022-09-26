@@ -101,7 +101,7 @@ setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/data/robomus
 file_names <- dir() #where you have your files
 te.bb <- do.call(rbind,lapply(file_names,my.read.table))
 #just 2007
-te.2007<- te.bb[grep("2007",te.bb$row.names),]
+te.wa<- te.bb[grep("2007",te.bb$row.names),]
 
 #process
 #extract sites and numbers
@@ -338,7 +338,7 @@ fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x=doy, y =value, 
   geom_line() +theme_classic(base_size = 14)+
   scale_color_viridis_d(alpha=0.6)+theme(legend.position="bottom")+
   ylab("clearance rate at lower-mid site (ml/min)")+xlab("day of year")+
-  xlim(120,274)
+  xlim(120,274)+ylim(0,200)
 
 #density plot
 ggplot(data=ts.l[ts.l$type %in% "performance",], aes(x =value, color=timescale))+

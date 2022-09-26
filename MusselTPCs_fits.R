@@ -23,6 +23,14 @@ temps= c(13, 17.5, 22, 26)
 assim.fed= c(134.17, 176.06, 192.39, 113.58) #cals /day)
 assim.starv=c(7.58, 9.92, 10.87, 6.42)
 
+cr= rbind(cbind(temp= temps,assim= assim.fed,food="fed"),
+          cbind(temp= temps,assim= assim.starv,food="starv"))
+cr= as.data.frame(cr)
+cr$temp= as.numeric(cr$temp)
+cr$assim= as.numeric(cr$assim)
+
+ggplot(data=cr, aes(x=temp, y =assim, color=food, group=food))+
+  geom_point()+ geom_line(alpha=0.8) +theme_classic()
 #-----
 #fit tpc
 #rTPC, https://github.com/padpadpadpad/rTPC
@@ -34,7 +42,13 @@ library(nls.multstart)
 library(broom)
 library(tidyverse)
 
-d= subset(cr, cr$species=="M. trossulus" & cr$season=="summer" )
+##clearance rate
+#d= subset(cr, cr$species=="M. trossulus" & cr$season=="summer" )
+#d= d[,1:2]
+#colnames(d)=c("temp","rate")
+
+##assimilation rate
+d= subset(cr, cr$food=="fed")
 d= d[,1:2]
 colnames(d)=c("temp","rate")
 
@@ -75,13 +89,13 @@ d_fits <- nest(d, data = c(temp, rate)) %>%
                                             convergence_count = FALSE)))
 
 # stack models
-d_stack <- select(d_fits, -data) %>%
+d_stack <- dplyr::select(d_fits, -data) %>%
   pivot_longer(., names_to = 'model_name', values_to = 'fit', beta:weibull)
 
 # get parameters using tidy
 params <- d_stack %>%
   mutate(., est = map(fit, tidy)) %>%
-  select(-fit) %>%
+  dplyr::select(-fit) %>%
   unnest(est)
 
 # get predictions using augment
@@ -115,3 +129,6 @@ preds <- broom::augment(mod, newdata = preds)
 #extract coefficients
 tpc.beta= coef(mod)
 #beta_2012(temp, a, b, c, d, e)
+
+plot(1:50, beta_2012(1:50, tpc.beta[1], tpc.beta[2], tpc.beta[3], tpc.beta[4], tpc.beta[5]), type="l", ylim=c(0,200))
+
