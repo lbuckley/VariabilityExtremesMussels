@@ -12,8 +12,7 @@ library(ggplot2)
 #https://link.springer.com/article/10.1007/s00442-012-2486-6
 #use M. trossulus cleanance rate?
 
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/MusselData/")
-cr= read.csv("FlyHilbishTPC.csv")
+cr= read.csv("./data/FlyHilbishTPC.csv")
 
 #omit edulis for simplicity
 mussel.seas.fig= ggplot(data=cr[cr$species %in% c("M. galloprovincialis", "M. trossulus"),], 
@@ -52,10 +51,8 @@ plot(1:40, perf, type="l")
 #https://doi.pangaea.de/10.1594/PANGAEA.897938
 
 #load TPC data
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/MusselData/")
-
-st= read.csv("Shortterm_experiment.csv")
-lt= read.csv("Longterm_growth.csv")
+st= read.csv("./data/Shortterm_experiment.csv")
+lt= read.csv("./data/Longterm_growth.csv")
 
 #short term
 st.fig<- ggplot(data=st, aes(x=Temp_C_x, y =WS_feed_J_per_h_S, color=replicate, lty=trial_name))+
@@ -78,20 +75,9 @@ lt.fig<- ggplot(data=lt.mean, aes(x=Mean.temperature...C., y =mean, color=Fluctu
 #--------
 #combine
 setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/figures/")
-pdf("Fig1_musselTPCs.pdf",height = 6, width = 11)
+pdf("Fig4_musselTPCs.pdf",height = 6, width = 11)
 mussel.seas.fig+ lt.fig + plot_layout(ncol = 2, widths=c(2,1.5))+ 
   plot_annotation(tag_levels = 'A')
 dev.off()
 
-#------------------
-#Apply TPC to predict performance
-
-#Bernhardt: https://doi.org/10.1098/rspb.2018.1076
-#https://github.com/JoeyBernhardt/thermal-variability
-#Text S1
-
-#?? Calculate ith derivative of polynomial TPC, Calculate first 10 moments of temperature time series
-#just calcualte performance using TPC?
-
-
-
+setwd(hd)

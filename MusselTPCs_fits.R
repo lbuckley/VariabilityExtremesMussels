@@ -10,8 +10,7 @@ library(ggplot2)
 #https://link.springer.com/article/10.1007/s00442-012-2486-6
 #use M. trossulus cleanance rate?
 
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/PLoSextremes/MusselData/")
-cr= read.csv("FlyHilbishTPC.csv")
+cr= read.csv("./data/FlyHilbishTPC.csv")
 
 ggplot(data=cr, aes(x=temp_C, y =clearance_ml_min, color=season))+
   facet_wrap(~species)+

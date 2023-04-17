@@ -9,8 +9,9 @@ library(viridis)
 library(ggplot2)
 library(rTPC)
 
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/analysis/")
-source("TempcyclesAnalysis.R")
+source("./analysis/TempcyclesAnalysis.R")
+
+hd= getwd()
 
 #ROBOMUSSEL ANALYSIS
 
@@ -28,11 +29,10 @@ source("TempcyclesAnalysis.R")
 
 #-----------------
 #Robomussel data
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/data/")
-site.dat= read.csv("musselREADME.csv")
+site.dat= read.csv("./data/musselREADME.csv")
 
 #Load robomussel data
-te.max <- readRDS("tedat.rds")
+te.max <- readRDS("./data/tedat.rds")
 #te.max= read.csv("tedat.csv")
 
 #ungroup due to formatting error 
@@ -87,10 +87,7 @@ dat1$tmax = dat1$tmax/10
 
 #------------------------
 #Load boiler bay data
-
-#site info
-setwd("/Volumes/GoogleDrive/My Drive/Buckley/Work/ICBClimateBiology/data/robomussels/")
-site.dat= read.csv("README.csv")
+#Data available from https://helmuthlab.cos.northeastern.edu/databases/robomussel/
 
 my.read.table= function(x) {
   dat= read.table(x, row.names=NULL)
