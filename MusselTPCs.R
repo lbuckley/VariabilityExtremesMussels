@@ -71,7 +71,7 @@ lt.fig<- ggplot(data=lt.mean, aes(x=Mean.temperature...C., y =mean, color=Fluctu
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1) +
   ylab("shell length growth (mm/day)")+
   xlab("thermal average (°C)")+
-  scale_color_viridis_d("fluctuation")+
+  scale_color_brewer("fluctuation", palette = "Dark2")+
   theme(legend.position = c(0.3, 0.3))
 #change to GAM
 

@@ -4,6 +4,7 @@ library(dplyr)
 library(reshape2)
 library(tidyr)
 library(zoo)
+library(viridis)
 
 library(ggplot2)
 library(rTPC)
@@ -258,9 +259,15 @@ table(pow$subsite)
 #subsites
 pow1= pow[pow$subsite %in% subs,]
 
+#extract turbo colors from panel c for timescale lines
+tcol= turbo(5)
+
 fig2b<- ggplot(data=pow1, aes(x=log(freq), y = log(cyc_range/2) ))+geom_line(alpha=0.8, aes(color=Height)) +theme_classic(base_size = 14)+ 
   #guides(color=FALSE, size=FALSE)+
-  geom_vline(xintercept=-2.639, color="gray")+geom_vline(xintercept=-1.946, color="gray")+geom_vline(xintercept=-3.40, color="gray")+geom_vline(xintercept=-5.9, color="gray")+
+  geom_vline(xintercept=-1.946, color=tcol[2])+
+  geom_vline(xintercept=-2.639, color=tcol[3])+
+  geom_vline(xintercept=-3.40, color=tcol[4])+
+  geom_vline(xintercept=-5.9, color="gray")+
   labs(x = "log (frequency) (1/days)",y="log (amplitude)")+
   scale_color_manual("height", values=vir.cols)+
   annotate(geom="text", x=-2.1, y=-5, label="1 week", size=3, color="black",angle=90)+ 
@@ -341,7 +348,7 @@ ts.l$timescale= ordered(ts.l$timescale, levels=c("subhourly","day","week","2 wee
 fig.perf= ggplot(data=ts.l[ts.l$type %in% "performance"&  ts.l$timescale %in% c("day","week","2 week","month","3 month"),], aes(x=doy.t, y =value, color=timescale))+
   #facet_grid(site~., scales="free_y")+
   geom_line() +theme_classic(base_size = 14)+
-  scale_color_viridis_d(alpha=0.6)+theme(legend.position="bottom")+
+  scale_color_viridis_d(option="turbo")+theme(legend.position="bottom")+
   ylab("assimilation rate (cal/day)")+xlab("day of year")+
   xlim(120,274)+ylim(0,200)
 
